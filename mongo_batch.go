@@ -1,14 +1,14 @@
 package mongobatch
 
 import (
-	"github.com/laknath/go-mongo-batch/internal"
+	"github.com/laknath/go-mongo-batch/config"
 	"gopkg.in/mgo.v2"
 )
 
-func FetchInput(conf *internal.Configuration, result interface{}) (interface{}, error) {
+func FetchInput(conf *config.Configuration, result interface{}) (interface{}, error) {
 	//TODO
 	//use a distributed lock for atomicity
-	session, err := mgo.Dial(internal.ConnectString(conf))
+	session, err := mgo.Dial(config.ConnectString(conf))
 	if err != nil {
 		return nil, err
 	}

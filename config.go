@@ -1,4 +1,4 @@
-package internal
+package mongobatch
 
 import (
 	"fmt"
@@ -25,29 +25,15 @@ type Configuration struct {
 }
 
 // NewConfiguration creates a new Configuration object with default values.
-func NewConfiguration(host string, port uint, db string, col string, s string, ord string, limit int) Configuration {
+func NewConfiguration(host string, port uint, db string, col string) Configuration {
 	conf := Configuration{
 		Host:       host,
 		Port:       port,
 		Database:   db,
 		Collection: col,
-		StateFld:   s,
-		FetchOrder: ord,
-		FetchLimit: limit,
-	}
-
-	// set the default field for state
-	if len(s) == 0 {
-		conf.StateFld = DefaultStateFld
-	}
-
-	// set the default FetchOrder field to "CreatedAt", oldest first
-	if len(ord) == 0 {
-		conf.FetchOrder = DefaultFetchOrder
-	}
-
-	if limit <= 0 {
-		conf.FetchLimit = DefaultFetchLimit
+		StateFld:   DefaultStateFld,
+		FetchOrder: DefaultFetchOrder,
+		FetchLimit: DefaultFetchLimit,
 	}
 
 	conf.FetchQuery = bson.M{conf.StateFld: bson.M{"$ne": "processed"}}
@@ -58,6 +44,6 @@ func NewConfiguration(host string, port uint, db string, col string, s string, o
 }
 
 // ConnectString creates a Mongo Connection string.
-func ConnectString(config *Configuration) string {
+func connectString(config *Configuration) string {
 	return fmt.Sprintf("%s:%d", config.Host, config.Port)
 }
