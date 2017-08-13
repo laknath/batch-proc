@@ -13,6 +13,16 @@ import (
 // the mongo connection.
 
 // The result argument must be the address for a slice. It will hold the resulting result set.
+
+// For instance:
+//
+//    var result []struct{ Value int }
+//	  config := NewConfiguration("localhost", 27017, "salaries", "batch")
+//    err := FetchInput(config, &results)
+//    if err != nil {
+//        return err
+//    }
+//
 func FetchInput(conf *Configuration, result interface{}) error {
 	//TODO
 	//use a distributed lock for mutual exclusion
