@@ -51,6 +51,17 @@ func markProcessing(conf *Configuration, iter *mgo.Iter, result interface{}) err
 	slicev := resultv.Elem()
 	slicev = slicev.Slice(0, slicev.Cap())
 	elemt := slicev.Type().Elem()
+	if elemt.Kind() != reflect.Struct {
+		panic("result slice's type should be struct")
+	}
+	fld, ok := elemt.FieldByName(conf.StateFld)
+	if !ok {
+		panic("result slice's elements should have a state field as defined by configuration.StateFld")
+	}
+	if fld.Type.Kind() != reflect.String {
+		panic("result struct's state should be string")
+	}
+
 	i := 0
 	for {
 		if slicev.Len() == i {
