@@ -59,7 +59,7 @@ func markProcessing(conf *Configuration, iter *mgo.Iter, result interface{}) err
 		panic("result slice's elements should have a state field as defined by configuration.StateFld")
 	}
 	if fld.Type.Kind() != reflect.String {
-		panic("result struct's state should be string")
+		panic("result struct's state should be a string")
 	}
 
 	i := 0

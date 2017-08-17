@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	DefaultStateFld   = "state"
+	DefaultStateFld   = "State"
 	DefaultFetchOrder = "CreatedAt"
 	DefaultFetchLimit = 100
 )
