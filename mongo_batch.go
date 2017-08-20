@@ -1,7 +1,10 @@
 package mongobatch
 
 import (
+	"encoding/hex"
+	"fmt"
 	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 	"reflect"
 )
 
@@ -35,10 +38,42 @@ func FetchInput(conf *Configuration, result interface{}) error {
 	// query db
 	c := session.DB(conf.Database).C(conf.Collection)
 	iter := c.Find(conf.FetchQuery).Limit(conf.FetchLimit).Sort(conf.FetchOrder).Iter()
-
-	err = markProcessing(conf, iter, result)
+	if err = iter.All(result); err != nil {
+		return err
+	}
+	ids := fetchIds(conf, result)
+	fmt.Println(ids)
+	// update all matching documents to processing
+	_, err = c.UpdateAll(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{"state": "processing"}})
 
 	return err
+}
+
+// fetchIds returns the list of IDs contained in the result
+func fetchIds(conf *Configuration, result interface{}) []string {
+	resultv := reflect.ValueOf(result)
+	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
+		panic("result argument must be a slice address")
+	}
+	slicev := resultv.Elem()
+	slicev = slicev.Slice(0, slicev.Cap())
+	elemt := slicev.Type().Elem()
+	if elemt.Kind() != reflect.Struct {
+		panic("result slice's type should be struct")
+	}
+	fld, ok := elemt.FieldByName("Id")
+	if !ok {
+		panic("result slice's elements should have an ID field")
+	}
+	if fld.Type.String() != "bson.ObjectId" {
+		panic("ID field should be of type bson.ObjectId")
+	}
+	ids := make([]string, slicev.Len())
+	for i := 0; i < slicev.Len(); i++ {
+		ids[i] = hex.EncodeToString([]byte(slicev.Index(i).FieldByName("Id").String()))
+	}
+
+	return ids
 }
 
 // markProcessing updates the state of records in the iter to "processing"
@@ -76,7 +111,6 @@ func markProcessing(conf *Configuration, iter *mgo.Iter, result interface{}) err
 				break
 			}
 		}
-
 		slicev.Index(i).FieldByName(conf.StateFld).SetString("processing")
 		i++
 	}
