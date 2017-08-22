@@ -6,39 +6,49 @@ import (
 )
 
 const (
-	DefaultStateFld   = "State"
-	DefaultFetchOrder = "CreatedAt"
-	DefaultFetchLimit = 100
+	DefaultStateFld        = "state"
+	DefaultFetchOrder      = "updatedat"
+	DefaultFetchLimit      = 10
+	DefaultProcessingState = "processing"
+	DefaultProcessedState  = "processed"
 )
 
 type Configuration struct {
-	Host        string
-	Port        uint
-	Database    string
-	Collection  string
-	StateFld    string
-	FetchOrder  string
-	FetchLimit  int
-	FetchQuery  bson.M
-	UpdateQuery bson.M
-	ResetQuery  bson.M
+	Host            string
+	Port            uint
+	Database        string
+	Collection      string
+	StateFld        string
+	FetchOrder      string
+	FetchLimit      int
+	FetchQuery      bson.M
+	UpdateQuery     bson.M
+	ResetQuery      bson.M
+	ProcessingState string
+	ProcessedState  string
 }
 
 // NewConfiguration creates a new Configuration object with default values.
 func NewConfiguration(host string, port uint, db string, col string) Configuration {
 	conf := Configuration{
-		Host:       host,
-		Port:       port,
-		Database:   db,
-		Collection: col,
-		StateFld:   DefaultStateFld,
-		FetchOrder: DefaultFetchOrder,
-		FetchLimit: DefaultFetchLimit,
+		Host:            host,
+		Port:            port,
+		Database:        db,
+		Collection:      col,
+		StateFld:        DefaultStateFld,
+		FetchOrder:      DefaultFetchOrder,
+		FetchLimit:      DefaultFetchLimit,
+		ProcessingState: DefaultProcessingState,
+		ProcessedState:  DefaultProcessedState,
 	}
 
-	conf.FetchQuery = bson.M{conf.StateFld: bson.M{"$ne": "processed"}}
-	conf.UpdateQuery = bson.M{conf.StateFld: "processed"}
-	conf.ResetQuery = bson.M{conf.StateFld: "reattempt"}
+	conf.FetchQuery = bson.M{
+		conf.StateFld: bson.M{
+			"$nin": []interface{}{conf.ProcessingState, conf.ProcessedState},
+		},
+	}
+	conf.UpdateQuery = bson.M{conf.StateFld: conf.ProcessedState}
+	//conf.ResetQuery = bson.M{conf.StateFld: "reattempt"}
 
 	return conf
 }
