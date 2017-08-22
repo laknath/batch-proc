@@ -2,7 +2,6 @@ package mongobatch
 
 import (
 	"encoding/hex"
-	"fmt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
@@ -42,21 +41,19 @@ func FetchInput(conf *Configuration, result interface{}) error {
 		return err
 	}
 	ids := fetchIds(conf, result)
-	fmt.Println(ids)
 	// update all matching documents to processing
-	_, err = c.UpdateAll(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{"state": "processing"}})
+	_, err = c.UpdateAll(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{conf.StateFld: conf.ProcessingState}})
 
 	return err
 }
 
 // fetchIds returns the list of IDs contained in the result
-func fetchIds(conf *Configuration, result interface{}) []string {
+func fetchIds(conf *Configuration, result interface{}) []bson.ObjectId {
 	resultv := reflect.ValueOf(result)
 	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
 		panic("result argument must be a slice address")
 	}
 	slicev := resultv.Elem()
-	slicev = slicev.Slice(0, slicev.Cap())
 	elemt := slicev.Type().Elem()
 	if elemt.Kind() != reflect.Struct {
 		panic("result slice's type should be struct")
@@ -68,52 +65,11 @@ func fetchIds(conf *Configuration, result interface{}) []string {
 	if fld.Type.String() != "bson.ObjectId" {
 		panic("ID field should be of type bson.ObjectId")
 	}
-	ids := make([]string, slicev.Len())
+	ids := make([]bson.ObjectId, slicev.Len())
 	for i := 0; i < slicev.Len(); i++ {
-		ids[i] = hex.EncodeToString([]byte(slicev.Index(i).FieldByName("Id").String()))
+		//TODO avoid double conversion by fixing interface conversion: interface {} panic
+		ids[i] = bson.ObjectIdHex(hex.EncodeToString([]byte(slicev.Index(i).FieldByName("Id").String())))
 	}
 
 	return ids
-}
-
-// markProcessing updates the state of records in the iter to "processing"
-// and stores records in the result slice.
-func markProcessing(conf *Configuration, iter *mgo.Iter, result interface{}) error {
-	resultv := reflect.ValueOf(result)
-	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
-		panic("result argument must be a slice address")
-	}
-	slicev := resultv.Elem()
-	slicev = slicev.Slice(0, slicev.Cap())
-	elemt := slicev.Type().Elem()
-	if elemt.Kind() != reflect.Struct {
-		panic("result slice's type should be struct")
-	}
-	fld, ok := elemt.FieldByName(conf.StateFld)
-	if !ok {
-		panic("result slice's elements should have a state field as defined by configuration.StateFld")
-	}
-	if fld.Type.Kind() != reflect.String {
-		panic("result struct's state should be a string")
-	}
-
-	i := 0
-	for {
-		if slicev.Len() == i {
-			elemp := reflect.New(elemt)
-			if !iter.Next(elemp.Interface()) {
-				break
-			}
-			slicev = reflect.Append(slicev, elemp.Elem())
-			slicev = slicev.Slice(0, slicev.Cap())
-		} else {
-			if !iter.Next(slicev.Index(i).Addr().Interface()) {
-				break
-			}
-		}
-		slicev.Index(i).FieldByName(conf.StateFld).SetString("processing")
-		i++
-	}
-	resultv.Elem().Set(slicev.Slice(0, i))
-	return iter.Close()
 }
