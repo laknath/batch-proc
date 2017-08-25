@@ -11,6 +11,8 @@ const (
 	DefaultFetchLimit      = 10
 	DefaultProcessingState = "processing"
 	DefaultProcessedState  = "processed"
+	DefaultErrorSleep      = 1000
+	DefaultNoRecordSleep   = 5000
 )
 
 type Configuration struct {
@@ -26,6 +28,8 @@ type Configuration struct {
 	ResetQuery      bson.M
 	ProcessingState string
 	ProcessedState  string
+	ErrorSleep      uint
+	NoRecordSleep   uint
 }
 
 // NewConfiguration creates a new Configuration object with default values.
@@ -40,6 +44,8 @@ func NewConfiguration(host string, port uint, db string, col string) Configurati
 		FetchLimit:      DefaultFetchLimit,
 		ProcessingState: DefaultProcessingState,
 		ProcessedState:  DefaultProcessedState,
+		ErrorSleep:      DefaultErrorSleep,
+		NoRecordSleep:   DefaultNoRecordSleep,
 	}
 
 	conf.FetchQuery = bson.M{

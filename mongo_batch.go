@@ -4,8 +4,43 @@ import (
 	"encoding/hex"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"log"
 	"reflect"
+	"time"
 )
+
+// BufferBatch returns a buffered channel of length bufsize
+// that will stream fetched objects capped at bufsize.
+// This is a convenience method for FetchBatch.
+func BufferBatch(conf *Configuration, result interface{}, bufsize int) chan interface{} {
+
+	c := make(chan interface{}, bufsize)
+
+	go func() {
+		for {
+			err := FetchBatch(conf, result)
+
+			resultv := reflect.ValueOf(result)
+			slicev := resultv.Elem()
+
+			if err != nil {
+				log.Println(err)
+				time.Sleep(time.Duration(conf.ErrorSleep) * time.Millisecond)
+			}
+
+			for i := 0; i < slicev.Len(); i++ {
+				c <- slicev.Index(i).Addr()
+			}
+
+			// if no records fetched, wait and retry
+			if slicev.Len() == 0 {
+				time.Sleep(time.Duration(conf.NoRecordSleep) * time.Millisecond)
+			}
+		}
+	}()
+
+	return c
+}
 
 // FetchInput fetches defined lengths of batches from a Mongo collection.
 // The retrieved batch will be marked processing. If a record is not marked
@@ -26,7 +61,7 @@ import (
 //        return err
 //    }
 //
-func FetchInput(conf *Configuration, result interface{}) error {
+func FetchBatch(conf *Configuration, result interface{}) error {
 	//TODO
 	//use a distributed lock for mutual exclusion
 	session, err := mgo.Dial(connectString(conf))
