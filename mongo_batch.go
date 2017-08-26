@@ -12,15 +12,15 @@ import (
 // BufferBatch returns a buffered channel of length bufsize
 // that will stream fetched objects capped at bufsize.
 // This is a convenience method for FetchBatch.
-func BufferBatch(conf *Configuration, result interface{}, bufsize int) chan interface{} {
+func BufferBatch(conf *Configuration, results interface{}, bufsize int) chan interface{} {
 
 	c := make(chan interface{}, bufsize)
 
 	go func() {
 		for {
-			err := FetchBatch(conf, result)
+			err := FetchBatch(conf, results)
 
-			resultv := reflect.ValueOf(result)
+			resultv := reflect.ValueOf(results)
 			slicev := resultv.Elem()
 
 			if err != nil {
@@ -50,18 +50,18 @@ func BufferBatch(conf *Configuration, result interface{}, bufsize int) chan inte
 // The conf argument is a Configuration object initialized with values necessary for
 // the mongo connection.
 
-// The result argument must be the address for a slice. It will hold the resulting result set.
+// The results argument must be the address for a slice. It will hold the resulting result set.
 
 // For instance:
 //
-//    var result []struct{ Value int }
+//    var results []struct{ Value int }
 //	  config := NewConfiguration("localhost", 27017, "salaries", "batch")
 //    err := FetchInput(config, &results)
 //    if err != nil {
 //        return err
 //    }
 //
-func FetchBatch(conf *Configuration, result interface{}) error {
+func FetchBatch(conf *Configuration, results interface{}) error {
 	//TODO
 	//use a distributed lock for mutual exclusion
 	session, err := mgo.Dial(connectString(conf))
@@ -72,19 +72,19 @@ func FetchBatch(conf *Configuration, result interface{}) error {
 	// query db
 	c := session.DB(conf.Database).C(conf.Collection)
 	iter := c.Find(conf.FetchQuery).Limit(conf.FetchLimit).Sort(conf.FetchOrder).Iter()
-	if err = iter.All(result); err != nil {
+	if err = iter.All(results); err != nil {
 		return err
 	}
-	ids := fetchIds(conf, result)
+	ids := fetchIds(conf, results)
 	// update all matching documents to processing
 	_, err = c.UpdateAll(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{conf.StateFld: conf.ProcessingState}})
 
 	return err
 }
 
-// fetchIds returns the list of IDs contained in the result
-func fetchIds(conf *Configuration, result interface{}) []bson.ObjectId {
-	resultv := reflect.ValueOf(result)
+// fetchIds returns the list of IDs contained in the results.
+func fetchIds(conf *Configuration, results interface{}) []bson.ObjectId {
+	resultv := reflect.ValueOf(results)
 	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
 		panic("result argument must be a slice address")
 	}
