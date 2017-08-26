@@ -11,8 +11,11 @@ const (
 	DefaultFetchLimit      = 10
 	DefaultProcessingState = "processing"
 	DefaultProcessedState  = "processed"
-	DefaultErrorSleep      = 1000
-	DefaultNoRecordSleep   = 5000
+	DefaultErrorSleep      = 1000 // 1 second
+	DefaultNoRecordSleep   = 5000 // 5 seconds
+
+	DefaultMaxInterval = 10000 // 10 seconds
+	DefaultMinRecords  = 100
 )
 
 type Configuration struct {
@@ -30,11 +33,19 @@ type Configuration struct {
 	ProcessedState  string
 	ErrorSleep      uint
 	NoRecordSleep   uint
+	UpdateStrategy  UpdateStrategy
+}
+
+type UpdateStrategy struct {
+	UseTimeInterval bool
+	UseMinRecords   bool
+	MaxInterval     uint
+	MinRecords      uint
 }
 
 // NewConfiguration creates a new Configuration object with default values.
-func NewConfiguration(host string, port uint, db string, col string) Configuration {
-	conf := Configuration{
+func NewConfiguration(host string, port uint, db string, col string) *Configuration {
+	conf := &Configuration{
 		Host:            host,
 		Port:            port,
 		Database:        db,
@@ -46,6 +57,13 @@ func NewConfiguration(host string, port uint, db string, col string) Configurati
 		ProcessedState:  DefaultProcessedState,
 		ErrorSleep:      DefaultErrorSleep,
 		NoRecordSleep:   DefaultNoRecordSleep,
+
+		UpdateStrategy: UpdateStrategy{
+			UseTimeInterval: true,
+			UseMinRecords:   true,
+			MaxInterval:     DefaultMaxInterval,
+			MinRecords:      DefaultMinRecords,
+		},
 	}
 
 	conf.FetchQuery = bson.M{
