@@ -2,6 +2,7 @@ package mongobatch
 
 import (
 	"encoding/hex"
+	"github.com/laknath/go-mongo-batch/internal"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"log"
@@ -84,7 +85,7 @@ func FetchBatch(conf *Configuration, results interface{}) error {
 
 // fetchIds returns the list of IDs contained in the results.
 func fetchIds(conf *Configuration, results interface{}) []bson.ObjectId {
-	slicev := verifySlice(results)
+	slicev := internal.VerifySlice(results)
 
 	ids := make([]bson.ObjectId, slicev.Len())
 	for i := 0; i < slicev.Len(); i++ {
