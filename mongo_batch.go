@@ -29,7 +29,7 @@ func BufferBatch(conf *Configuration, results interface{}, bufsize int) chan int
 			}
 
 			for i := 0; i < slicev.Len(); i++ {
-				c <- slicev.Index(i).Addr()
+				c <- slicev.Index(i).Addr().Interface()
 			}
 
 			// if no records fetched, wait and retry
@@ -84,22 +84,8 @@ func FetchBatch(conf *Configuration, results interface{}) error {
 
 // fetchIds returns the list of IDs contained in the results.
 func fetchIds(conf *Configuration, results interface{}) []bson.ObjectId {
-	resultv := reflect.ValueOf(results)
-	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
-		panic("result argument must be a slice address")
-	}
-	slicev := resultv.Elem()
-	elemt := slicev.Type().Elem()
-	if elemt.Kind() != reflect.Struct {
-		panic("result slice's type should be struct")
-	}
-	fld, ok := elemt.FieldByName("Id")
-	if !ok {
-		panic("result slice's elements should have an ID field")
-	}
-	if fld.Type.String() != "bson.ObjectId" {
-		panic("ID field should be of type bson.ObjectId")
-	}
+	slicev := verifySlice(results)
+
 	ids := make([]bson.ObjectId, slicev.Len())
 	for i := 0; i < slicev.Len(); i++ {
 		//TODO avoid double conversion by fixing interface conversion: interface {} panic
