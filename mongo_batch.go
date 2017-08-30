@@ -1,7 +1,6 @@
 package mongobatch
 
 import (
-	"encoding/hex"
 	"github.com/laknath/go-mongo-batch/internal"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -90,13 +89,13 @@ func fetchIds(conf *Configuration, slicev reflect.Value) []bson.ObjectId {
 	ids := make([]bson.ObjectId, slicev.Len())
 	for i := 0; i < slicev.Len(); i++ {
 		//TODO avoid double conversion by fixing interface conversion: interface {} panic
-		var e string
+		var e reflect.Value
 		if slicev.Index(i).Kind() == reflect.Ptr {
-			e = slicev.Index(i).Elem().FieldByName("Id").String()
+			e = slicev.Index(i).Elem().FieldByName("Id")
 		} else {
-			e = slicev.Index(i).FieldByName("Id").String()
+			e = slicev.Index(i).FieldByName("Id")
 		}
-		ids[i] = bson.ObjectIdHex(hex.EncodeToString([]byte(e)))
+		ids[i] = internal.ObjectIdFromString(e.String())
 	}
 
 	return ids

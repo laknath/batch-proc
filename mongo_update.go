@@ -1,7 +1,6 @@
 package mongobatch
 
 import (
-	"encoding/hex"
 	"github.com/laknath/go-mongo-batch/internal"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -89,7 +88,7 @@ func updateSingleRecord(conf *Configuration, v interface{}, c *mgo.Collection) {
 	}
 	id := resultv.Elem().FieldByName("Id")
 	if id.IsValid() {
-		oid := bson.ObjectIdHex(hex.EncodeToString([]byte(id.String())))
+		oid := internal.ObjectIdFromString(id.String())
 		c.UpdateId(oid, bson.M{"$set": bson.M{conf.StateFld: conf.ProcessedState}})
 	} else {
 		log.Printf("Not updated. Struct doesn't have an ID field %v", v)
