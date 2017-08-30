@@ -14,7 +14,7 @@ import (
 // that will stream fetched objects capped at bufsize.
 // This is a convenience method for FetchBatch.
 func BufferBatch(conf *Configuration, results interface{}, bufsize int) chan interface{} {
-
+	internal.VerifySlice(results)
 	c := make(chan interface{}, bufsize)
 
 	go func() {
@@ -63,6 +63,8 @@ func BufferBatch(conf *Configuration, results interface{}, bufsize int) chan int
 //    }
 //
 func FetchBatch(conf *Configuration, results interface{}) error {
+	slicev := internal.VerifySlice(results)
+
 	//TODO
 	//use a distributed lock for mutual exclusion
 	session, err := mgo.Dial(connectString(conf))
@@ -76,21 +78,25 @@ func FetchBatch(conf *Configuration, results interface{}) error {
 	if err = iter.All(results); err != nil {
 		return err
 	}
-	ids := fetchIds(conf, results)
+	ids := fetchIds(conf, slicev)
 	// update all matching documents to processing
 	_, err = c.UpdateAll(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{conf.StateFld: conf.ProcessingState}})
 
 	return err
 }
 
-// fetchIds returns the list of IDs contained in the results.
-func fetchIds(conf *Configuration, results interface{}) []bson.ObjectId {
-	slicev := internal.VerifySlice(results)
-
+// fetchIds returns the list of IDs contained in slicev.
+func fetchIds(conf *Configuration, slicev reflect.Value) []bson.ObjectId {
 	ids := make([]bson.ObjectId, slicev.Len())
 	for i := 0; i < slicev.Len(); i++ {
 		//TODO avoid double conversion by fixing interface conversion: interface {} panic
-		ids[i] = bson.ObjectIdHex(hex.EncodeToString([]byte(slicev.Index(i).FieldByName("Id").String())))
+		var e string
+		if slicev.Index(i).Kind() == reflect.Ptr {
+			e = slicev.Index(i).Elem().FieldByName("Id").String()
+		} else {
+			e = slicev.Index(i).FieldByName("Id").String()
+		}
+		ids[i] = bson.ObjectIdHex(hex.EncodeToString([]byte(e)))
 	}
 
 	return ids
