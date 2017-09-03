@@ -12,16 +12,21 @@ import (
 // BufferBatch returns a buffered channel of length bufsize
 // that will stream fetched objects capped at bufsize.
 // This is a convenience method for FetchBatch.
-func BufferBatch(conf *Configuration, results interface{}, bufsize int) chan interface{} {
-	internal.VerifySlice(results)
+func BufferBatch(conf *Configuration, result interface{}, bufsize int) chan interface{} {
+	elemt := internal.VerifyStructPointer(result)
+	// create an addressable pointer to a new slice
+	slicep := internal.NewPointerToSlice(elemt.Elem())
+	slicev := slicep.Elem()
+
 	c := make(chan interface{}, bufsize)
 
 	go func() {
 		for {
-			err := FetchBatch(conf, results)
+			err := FetchBatch(conf, slicep.Interface())
+			slicev = slicep.Elem()
 
-			resultv := reflect.ValueOf(results)
-			slicev := resultv.Elem()
+			//resultv := reflect.ValueOf(results)
+			//slicev := resultv.Elem()
 
 			if err != nil {
 				log.Println(err)
@@ -34,6 +39,7 @@ func BufferBatch(conf *Configuration, results interface{}, bufsize int) chan int
 
 			// if no records fetched, wait and retry
 			if slicev.Len() == 0 {
+				// TODO add an exponential backoff
 				time.Sleep(time.Duration(conf.NoRecordSleep) * time.Millisecond)
 			}
 		}

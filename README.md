@@ -16,6 +16,9 @@ This library is a helper for processing batches in Mongo reliably.
 * Reset the timer in update batch when the batch is updated by exceeding min records.
 * Verify objects receied before appending to the slice
 * Change BufferBatch to accept struct pointer instead of a slice
+* Timeout to update “Processing” back to “initial”
+* Reset the timer in update batch when the batch is updated by exceeding min records
+* Verify objects received before appending to the slice
 * Copy the results array before streaming
 * Cope when mongo connection interrupts 
 
