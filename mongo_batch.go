@@ -14,25 +14,21 @@ import (
 // This is a convenience method for FetchBatch.
 func BufferBatch(conf *Configuration, result interface{}, bufsize int) chan interface{} {
 	elemt := internal.VerifyStructPointer(result)
-	// create an addressable pointer to a new slice
-	slicep := internal.NewPointerToSlice(elemt.Elem())
-	slicev := slicep.Elem()
-
 	c := make(chan interface{}, bufsize)
 
 	go func() {
 		for {
+			// create an addressable pointer to a new slice
+			slicep := internal.NewPointerToSlice(elemt.Elem())
 			err := FetchBatch(conf, slicep.Interface())
-			slicev = slicep.Elem()
-
-			//resultv := reflect.ValueOf(results)
-			//slicev := resultv.Elem()
 
 			if err != nil {
 				log.Println(err)
 				time.Sleep(time.Duration(conf.ErrorSleep) * time.Millisecond)
+				continue
 			}
 
+			slicev := slicep.Elem()
 			for i := 0; i < slicev.Len(); i++ {
 				c <- slicev.Index(i).Addr().Interface()
 			}
