@@ -40,8 +40,10 @@ func UpdateBatch(conf *Configuration, result interface{}) (chan interface{}, err
 					//update as they arrive
 					go updateSingleRecord(conf, v, c)
 				} else {
-					s = reflect.Append(s, reflect.ValueOf(v))
-					log.Println(s.Len())
+					rv := reflect.ValueOf(v)
+					if rv.Type() == elemt {
+						s = reflect.Append(s, rv)
+					}
 
 					if s.Len() >= minr {
 						log.Println("Updating the batch")
