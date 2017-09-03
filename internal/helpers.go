@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
+	"time"
 )
 
 // ObjectIdFromString returns a bson.ObjectId from a given
@@ -18,4 +19,11 @@ func NewPointerToSlice(elemt reflect.Type) reflect.Value {
 	slicep := reflect.New(slicev.Type())
 	slicep.Elem().Set(slicev)
 	return slicep
+}
+
+// newTicker returns a ticker and its time channel using Milliseconds as the unit
+// of duration
+func NewTicker(millisecs uint) (*time.Ticker, <-chan time.Time) {
+	ticker := time.NewTicker(time.Duration(millisecs) * time.Millisecond)
+	return ticker, ticker.C
 }

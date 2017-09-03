@@ -23,10 +23,11 @@ func UpdateBatch(conf *Configuration, result interface{}) (chan interface{}, err
 
 	ch := make(chan interface{})
 	s := reflect.MakeSlice(reflect.SliceOf(elemt), 0, 0)
-	var t <-chan time.Time
 
-	if conf.UpdateStrategy.UseTimeInterval {
-		t = time.Tick(time.Duration(conf.UpdateStrategy.MaxInterval) * time.Millisecond)
+	var ticker *time.Ticker
+	var t <-chan time.Time
+	if conf.UpdateStrategy.UseMinRecords && conf.UpdateStrategy.UseTimeInterval {
+		ticker, t = internal.NewTicker(conf.UpdateStrategy.MaxInterval)
 	}
 
 	go func() {
@@ -46,8 +47,15 @@ func UpdateBatch(conf *Configuration, result interface{}) (chan interface{}, err
 					}
 
 					if s.Len() >= minr {
-						log.Println("Updating the batch")
 						s = updateAndClear(conf, s, c)
+
+						// reset the timer
+						if conf.UpdateStrategy.UseTimeInterval {
+							if ticker != nil {
+								ticker.Stop()
+							}
+							ticker, t = internal.NewTicker(conf.UpdateStrategy.MaxInterval)
+						}
 					}
 				}
 
