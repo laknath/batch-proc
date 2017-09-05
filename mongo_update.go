@@ -84,7 +84,10 @@ func updateAndClear(conf *Configuration, slicev reflect.Value, c *mgo.Collection
 func updateRecords(conf *Configuration, slicev reflect.Value, c *mgo.Collection) error {
 	ids := fetchIds(conf, slicev)
 	// update all matching documents to processing
-	_, err := c.UpdateAll(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{conf.StateFld: conf.ProcessedState}})
+	_, err := c.UpdateAll(
+		bson.M{"_id": bson.M{"$in": ids}},
+		bson.M{"$set": bson.M{conf.StateFld: conf.ProcessedState, conf.ProcessedTimeFld: time.Now().Unix()}},
+	)
 	return err
 }
 
@@ -99,7 +102,7 @@ func updateSingleRecord(conf *Configuration, v interface{}, c *mgo.Collection) {
 	id := resultv.Elem().FieldByName("Id")
 	if id.IsValid() {
 		oid := internal.ObjectIdFromString(id.String())
-		c.UpdateId(oid, bson.M{"$set": bson.M{conf.StateFld: conf.ProcessedState}})
+		c.UpdateId(oid, bson.M{"$set": bson.M{conf.StateFld: conf.ProcessedState, conf.ProcessedTimeFld: time.Now().Unix()}})
 	} else {
 		log.Printf("Not updated. Struct doesn't have an ID field %v", v)
 	}

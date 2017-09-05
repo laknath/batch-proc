@@ -82,7 +82,10 @@ func FetchBatch(conf *Configuration, results interface{}) error {
 	slicev := reflect.ValueOf(results).Elem()
 	ids := fetchIds(conf, slicev)
 	// update all matching documents to processing
-	_, err = c.UpdateAll(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{conf.StateFld: conf.ProcessingState}})
+	_, err = c.UpdateAll(
+		bson.M{"_id": bson.M{"$in": ids}},
+		bson.M{"$set": bson.M{conf.StateFld: conf.ProcessingState, conf.ProcessingTimeFld: time.Now().Unix()}},
+	)
 
 	return err
 }

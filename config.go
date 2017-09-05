@@ -6,34 +6,38 @@ import (
 )
 
 const (
-	DefaultStateFld        = "state"
-	DefaultFetchOrder      = "updatedat"
-	DefaultFetchLimit      = 10
-	DefaultProcessingState = "processing"
-	DefaultProcessedState  = "processed"
-	DefaultErrorSleep      = 1000 // 1 second
-	DefaultNoRecordSleep   = 5000 // 5 seconds
+	DefaultStateFld          = "state"
+	DefaultProcessingTimeFld = "processing_at"
+	DefaultProcessedTimeFld  = "processed_at"
+	DefaultFetchOrder        = "updated_at"
+	DefaultFetchLimit        = 10
+	DefaultProcessingState   = "processing"
+	DefaultProcessedState    = "processed"
+	DefaultErrorSleep        = 1000 // 1 second
+	DefaultNoRecordSleep     = 5000 // 5 seconds
 
-	DefaultMaxInterval = 10000 // 10 seconds
-	DefaultMinRecords  = 100
+	DefaultMaxInterval       = 10000 // 10 seconds
+	DefaultMinRecords        = 30
+	DefaultVisibilityTimeout = 3600 // 1 hour
 )
 
 type Configuration struct {
-	Host            string
-	Port            uint
-	Database        string
-	Collection      string
-	StateFld        string
-	FetchOrder      string
-	FetchLimit      int
-	FetchQuery      bson.M
-	UpdateQuery     bson.M
-	ResetQuery      bson.M
-	ProcessingState string
-	ProcessedState  string
-	ErrorSleep      uint
-	NoRecordSleep   uint
-	UpdateStrategy  UpdateStrategy
+	Host              string
+	Port              uint
+	Database          string
+	Collection        string
+	StateFld          string
+	ProcessingTimeFld string
+	ProcessedTimeFld  string
+	FetchOrder        string
+	FetchLimit        int
+	FetchQuery        bson.M
+	ProcessingState   string
+	ProcessedState    string
+	ErrorSleep        uint
+	NoRecordSleep     uint
+	VisibilityTimeout uint
+	UpdateStrategy    UpdateStrategy
 }
 
 type UpdateStrategy struct {
@@ -46,17 +50,20 @@ type UpdateStrategy struct {
 // NewConfiguration creates a new Configuration object with default values.
 func NewConfiguration(host string, port uint, db string, col string) *Configuration {
 	conf := &Configuration{
-		Host:            host,
-		Port:            port,
-		Database:        db,
-		Collection:      col,
-		StateFld:        DefaultStateFld,
-		FetchOrder:      DefaultFetchOrder,
-		FetchLimit:      DefaultFetchLimit,
-		ProcessingState: DefaultProcessingState,
-		ProcessedState:  DefaultProcessedState,
-		ErrorSleep:      DefaultErrorSleep,
-		NoRecordSleep:   DefaultNoRecordSleep,
+		Host:              host,
+		Port:              port,
+		Database:          db,
+		Collection:        col,
+		StateFld:          DefaultStateFld,
+		ProcessingTimeFld: DefaultProcessingTimeFld,
+		ProcessedTimeFld:  DefaultProcessedTimeFld,
+		FetchOrder:        DefaultFetchOrder,
+		FetchLimit:        DefaultFetchLimit,
+		ProcessingState:   DefaultProcessingState,
+		ProcessedState:    DefaultProcessedState,
+		ErrorSleep:        DefaultErrorSleep,
+		NoRecordSleep:     DefaultNoRecordSleep,
+		VisibilityTimeout: DefaultVisibilityTimeout,
 
 		UpdateStrategy: UpdateStrategy{
 			UseTimeInterval: true,
@@ -69,10 +76,9 @@ func NewConfiguration(host string, port uint, db string, col string) *Configurat
 	conf.FetchQuery = bson.M{
 		conf.StateFld: bson.M{
 			"$nin": []interface{}{conf.ProcessingState, conf.ProcessedState},
+			//"$or":  bson.M{"processing_at": bson.M{"$lt": 1527665757}},
 		},
 	}
-	conf.UpdateQuery = bson.M{conf.StateFld: conf.ProcessedState}
-	//conf.ResetQuery = bson.M{conf.StateFld: "reattempt"}
 
 	return conf
 }
