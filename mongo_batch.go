@@ -64,7 +64,7 @@ func BufferBatch(conf *Configuration, result interface{}, bufsize int) chan inte
 //    }
 //
 func FetchBatch(conf *Configuration, results interface{}) error {
-	slicev := internal.VerifySlice(results)
+	internal.VerifySlice(results)
 
 	//TODO
 	//use a distributed lock for mutual exclusion
@@ -79,6 +79,7 @@ func FetchBatch(conf *Configuration, results interface{}) error {
 	if err = iter.All(results); err != nil {
 		return err
 	}
+	slicev := reflect.ValueOf(results).Elem()
 	ids := fetchIds(conf, slicev)
 	// update all matching documents to processing
 	_, err = c.UpdateAll(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{conf.StateFld: conf.ProcessingState}})
