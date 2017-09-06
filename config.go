@@ -9,16 +9,19 @@ const (
 	DefaultStateFld          = "state"
 	DefaultProcessingTimeFld = "processing_at"
 	DefaultProcessedTimeFld  = "processed_at"
+	DefaultRevertedTimeFld   = "reverted_at"
 	DefaultFetchOrder        = "updated_at"
 	DefaultFetchLimit        = 10
 	DefaultProcessingState   = "processing"
 	DefaultProcessedState    = "processed"
-	DefaultErrorSleep        = 1000 // 1 second
-	DefaultNoRecordSleep     = 5000 // 5 seconds
-
-	DefaultMaxInterval       = 10000 // 10 seconds
-	DefaultMinRecords        = 30
-	DefaultVisibilityTimeout = 3600 // 1 hour
+	DefaultErrorSleep        = 1000 //Millisecond  (1000 = 1 second)
+	DefaultNoRecordSleep     = 5000 //Millisecond (5000 = 5 seconds)
+	// update configs
+	DefaultMaxInterval = 10000 //Millisecond (10000 = 10 seconds)
+	DefaultMinRecords  = 30
+	//reattempt times
+	DefaultVisibilityTimeout = 3600 //seconds (3600 = 1 hour)
+	DefaultCronInterval      = 600  //seconds (600 = 10 mins)
 )
 
 type Configuration struct {
@@ -29,6 +32,7 @@ type Configuration struct {
 	StateFld          string
 	ProcessingTimeFld string
 	ProcessedTimeFld  string
+	RevertedTimeFld   string
 	FetchOrder        string
 	FetchLimit        int
 	FetchQuery        bson.M
@@ -37,6 +41,7 @@ type Configuration struct {
 	ErrorSleep        uint
 	NoRecordSleep     uint
 	VisibilityTimeout uint
+	CronInterval      uint
 	UpdateStrategy    UpdateStrategy
 }
 
@@ -57,6 +62,7 @@ func NewConfiguration(host string, port uint, db string, col string) *Configurat
 		StateFld:          DefaultStateFld,
 		ProcessingTimeFld: DefaultProcessingTimeFld,
 		ProcessedTimeFld:  DefaultProcessedTimeFld,
+		RevertedTimeFld:   DefaultRevertedTimeFld,
 		FetchOrder:        DefaultFetchOrder,
 		FetchLimit:        DefaultFetchLimit,
 		ProcessingState:   DefaultProcessingState,
@@ -64,6 +70,7 @@ func NewConfiguration(host string, port uint, db string, col string) *Configurat
 		ErrorSleep:        DefaultErrorSleep,
 		NoRecordSleep:     DefaultNoRecordSleep,
 		VisibilityTimeout: DefaultVisibilityTimeout,
+		CronInterval:      DefaultCronInterval,
 
 		UpdateStrategy: UpdateStrategy{
 			UseTimeInterval: true,
@@ -76,7 +83,6 @@ func NewConfiguration(host string, port uint, db string, col string) *Configurat
 	conf.FetchQuery = bson.M{
 		conf.StateFld: bson.M{
 			"$nin": []interface{}{conf.ProcessingState, conf.ProcessedState},
-			//"$or":  bson.M{"processing_at": bson.M{"$lt": 1527665757}},
 		},
 	}
 
