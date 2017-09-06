@@ -59,7 +59,7 @@ func UpdateBatch(conf *Configuration, result interface{}) (chan interface{}, err
 					}
 				}
 
-			case _ = <-t: // the max interval to go without updating records. nil channel if disabled.
+			case <-t: // the max interval to go without updating records. nil channel if disabled.
 				if s.Len() > 0 {
 					s = updateAndClear(conf, s, c)
 				}
